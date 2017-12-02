@@ -354,12 +354,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             Class<?> c; Type[] ts, as; Type t; ParameterizedType p;
             if ((c = x.getClass()) == String.class) // bypass checks 如果x的类型是String ,跳过检查
                 return c;
-            if ((ts = c.getGenericInterfaces()) != null) {//
+            if ((ts = c.getGenericInterfaces()) != null) {//该x类实现了Comparable.class借口
                 for (int i = 0; i < ts.length; ++i) {
-                    if (((t = ts[i]) instanceof ParameterizedType) &&
-                        ((p = (ParameterizedType)t).getRawType() ==
+                    if (((t = ts[i]) instanceof ParameterizedType) &&  //遍历x类 是否 属于 ParameterizedType
+                        ((p = (ParameterizedType)t).getRawType() ==    //符合的得到type类型
                          Comparable.class) &&
-                        (as = p.getActualTypeArguments()) != null &&
+                        (as = p.getActualTypeArguments()) != null && //得到真是的参数列表 ，且与x.getClass()相同
                         as.length == 1 && as[0] == c) // type arg is c
                         return c;
                 }
@@ -371,11 +371,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Returns k.compareTo(x) if x matches kc (k's screened comparable
      * class), else 0.
+     * kc 实现Comparables的类
+     * k  map的指定寻找key值
+     * x 当前红黑树Node节点的key值（p.key）
      */
     @SuppressWarnings({"rawtypes","unchecked"}) // for cast to Comparable
     static int compareComparables(Class<?> kc, Object k, Object x) {
         return (x == null || x.getClass() != kc ? 0 :
-                ((Comparable)k).compareTo(x));
+                ((Comparable)k).compareTo(x));//kc类，自定义的compareTo方法
     }
 
     /**
@@ -1897,19 +1900,19 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     p = pr;
                 else if ((pk = p.key) == k || (k != null && k.equals(pk)))//hash值相同，key值相同，返回该节点p
                     return p;
-                else if (pl == null)//key值不同，递归遍历直到左孩子为null(红黑树的叶子节点)，p改为右孩子。
+                else if (pl == null)//key值不同，左孩子为null(红黑树的叶子节点)，p改为右孩子。红黑树中，为null说明已经到达叶子节点，所以转向pr
                     p = pr;
-                else if (pr == null)//key值不同，递归遍历右孩子为null(红黑树的叶子节点)，p改为左孩子。
+                else if (pr == null)//key值不同，右孩子为null(红黑树的叶子节点)，p改为左孩子。
                     p = pl;
-                else if ((kc != null ||  //自定义的比较（实现comparable接口的类）？？？？
-                          (kc = comparableClassFor(k)) != null) &&
-                         (dir = compareComparables(kc, k, pk)) != 0)
+                else if ((kc != null ||  //自定义的比较（实现comparable接口的类
+                          (kc = comparableClassFor(k)) != null) && //Object k（map的key）是否实现了comparable接口，是的话返回该实现类
+                         (dir = compareComparables(kc, k, pk)) != 0) //在kc类中 调用k.compareTo(pk),自定义方法，根据返回值决定去左孩子还是又孩子
                     p = (dir < 0) ? pl : pr;
-                else if ((q = pr.find(h, k, kc)) != null)//hash值相同，key值不同且左孩子右孩子都存在，find右孩子
+                else if ((q = pr.find(h, k, kc)) != null)//hash值相同，key值不同且左孩子右孩子都存在，递归find右孩子
                     return q;
                 else                   //hash值相同，key值不同且左孩子右孩子都存在，右孩子没有找到，find左孩子
                     p = pl;
-            } while (p != null);
+            } while (p != null);//是否到叶子节点，红黑树叶子节点均为null
             return null;
         }
 
