@@ -345,15 +345,16 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
+     * 如果x是实现Comparable<C>的接口，返回x的类，否者返回null
      * Returns x's Class if it is of the form "class C implements
      * Comparable<C>", else null.
      */
     static Class<?> comparableClassFor(Object x) {
         if (x instanceof Comparable) {
             Class<?> c; Type[] ts, as; Type t; ParameterizedType p;
-            if ((c = x.getClass()) == String.class) // bypass checks
+            if ((c = x.getClass()) == String.class) // bypass checks 如果x的类型是String ,跳过检查
                 return c;
-            if ((ts = c.getGenericInterfaces()) != null) {
+            if ((ts = c.getGenericInterfaces()) != null) {//
                 for (int i = 0; i < ts.length; ++i) {
                     if (((t = ts[i]) instanceof ParameterizedType) &&
                         ((p = (ParameterizedType)t).getRawType() ==
@@ -635,18 +636,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param hash hash for key
      * @param key the key
      * @param value the value to put
-     * @param onlyIfAbsent if true, don't change existing value 
+     * @param onlyIfAbsent if true, don't change existing value  如果为真，不能改变存在的值
      * @param evict if false, the table is in creation mode.
      * @return previous value, or null if none
-     *
-     * Implements Map.put and related methods
-     *
-     * @param hash hash for key
-     * @param key the key
-     * @param value the value to put
-     * @param onlyIfAbsent 如果为真，不能改变存在的值
-     * @param evict if false, the table is in creation mode.
-     * @return previous value, or null if none
+     * 
      */
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
@@ -1884,32 +1877,37 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         }
 
         /**
+         * 从root节点p寻找符合hash和key的节点
          * Finds the node starting at root p with the given hash and key.
+         * 在第一次比较key时，kc参数会缓存 comparableClassFor(key) 
          * The kc argument caches comparableClassFor(key) upon first use
          * comparing keys.
          */
         final TreeNode<K,V> find(int h, Object k, Class<?> kc) {
+            //p是调用这个方法的对象
+            //getTreeNode(int h, Object k), p是root对象
             TreeNode<K,V> p = this;
             do {
                 int ph, dir; K pk;
                 TreeNode<K,V> pl = p.left, pr = p.right, q;
-                if ((ph = p.hash) > h)
+                //hash值，对于任何给定的object，hash值是相同的
+                if ((ph = p.hash) > h) //当前节点hash值大于寻找的哈希值，寻找左孩子
                     p = pl;
-                else if (ph < h)
+                else if (ph < h)//当前节点hash值小于寻找的哈希值，寻找右孩子
                     p = pr;
-                else if ((pk = p.key) == k || (k != null && k.equals(pk)))
+                else if ((pk = p.key) == k || (k != null && k.equals(pk)))//hash值相同，key值相同，返回该节点p
                     return p;
-                else if (pl == null)
+                else if (pl == null)//key值不同，递归遍历直到左孩子为null(红黑树的叶子节点)，p改为右孩子。
                     p = pr;
-                else if (pr == null)
+                else if (pr == null)//key值不同，递归遍历右孩子为null(红黑树的叶子节点)，p改为左孩子。
                     p = pl;
-                else if ((kc != null ||
+                else if ((kc != null ||  //自定义的比较（实现comparable接口的类）？？？？
                           (kc = comparableClassFor(k)) != null) &&
                          (dir = compareComparables(kc, k, pk)) != 0)
                     p = (dir < 0) ? pl : pr;
-                else if ((q = pr.find(h, k, kc)) != null)
+                else if ((q = pr.find(h, k, kc)) != null)//hash值相同，key值不同且左孩子右孩子都存在，find右孩子
                     return q;
-                else
+                else                   //hash值相同，key值不同且左孩子右孩子都存在，右孩子没有找到，find左孩子
                     p = pl;
             } while (p != null);
             return null;
