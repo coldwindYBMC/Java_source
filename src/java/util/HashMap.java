@@ -270,6 +270,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * The smallest table capacity for which bins may be treeified.
+     * 转化为红黑树最小的容量
      * (Otherwise the table is resized if too many nodes in a bin.)
      * Should be at least 4 * TREEIFY_THRESHOLD to avoid conflicts
      * between resizing and treeification thresholds.
@@ -348,6 +349,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * 如果x是实现Comparable<C>的接口，返回x的类，否者返回null
      * Returns x's Class if it is of the form "class C implements
      * Comparable<C>", else null.
+     * 1. Type直接子接口
+     *  ParameterizedType，GenericArrayType，TypeVariable和WildcardType四种类型的接口
+     *  ParameterizedType: 表示一种参数化的类型，比如Collection,获取参数化类型< >中的实际类型 如Map<String ,String>
+     *  GenericArrayType: 表示一种元素类型是参数化类型或者类型变量的数组类型
+     *  TypeVariable: 是各种类型变量的公共父接口
+     *  WildcardType: 代表一种通配符类型表达式，比如?, ? extends Number, ? super Integer【wildcard是一个单词：就是“通配符”】
      */
     static Class<?> comparableClassFor(Object x) {
         if (x instanceof Comparable) {
@@ -357,7 +364,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             if ((ts = c.getGenericInterfaces()) != null) {//该x类实现了Comparable.class借口
                 for (int i = 0; i < ts.length; ++i) {
                     if (((t = ts[i]) instanceof ParameterizedType) &&  //遍历x类 是否 属于 ParameterizedType
-                        ((p = (ParameterizedType)t).getRawType() ==    //符合的得到type类型
+                        ((p = (ParameterizedType)t).getRawType() ==    //符合的得到type类型,且是 Comparable.class
                          Comparable.class) &&
                         (as = p.getActualTypeArguments()) != null && //得到真是的参数列表 ，且与x.getClass()相同
                         as.length == 1 && as[0] == c) // type arg is c
@@ -698,6 +705,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
+     * 使用的是2次幂的扩展(指长度扩为原来2倍)，
+     * 所以，元素的位置要么是在原位置，要么是在原位置再移动2次幂的位置
+     * 
+     * 
      * Initializes or doubles table size.  If null, allocates in
      * accord with initial capacity target held in field threshold.
      * Otherwise, because we are using power-of-two expansion, the
@@ -746,19 +757,21 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                         newTab[e.hash & (newCap - 1)] = e;
                     else if (e instanceof TreeNode)
                         ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
-                    else { // preserve order
-                        Node<K,V> loHead = null, loTail = null;
-                        Node<K,V> hiHead = null, hiTail = null;
+                    else { // preserve order(保持次序) 原来的hash值新增的那个bit是1还是0，是0的话索引没变，是1的话索引变成“原索引+oldCap”,即newTab[j + oldCap]
+                        Node<K,V> loHead = null, loTail = null;//没有改变索引位置的记录loHead【链表】，loTail 当前链表的尾节点
+                        Node<K,V> hiHead = null, hiTail = null;//改变索引位置的记录hiHead【链表】，hiTail 当前链表的尾节点
                         Node<K,V> next;
                         do {
                             next = e.next;
-                            if ((e.hash & oldCap) == 0) {
-                                if (loTail == null)
-                                    loHead = e;
+                            // 索引还是原索引
+                            if ((e.hash & oldCap) == 0) {//如：oldCap 是 16，即二进制 1 0000，相与，可以判断e.hash的高位是否是0。为0则进入if语句
+                                if (loTail == null)//loHead链表首位为null
+                                    loHead = e;//链表首位放入e
                                 else
-                                    loTail.next = e;
-                                loTail = e;
+                                    loTail.next = e;//依次放入节点，保持次序。
+                                loTail = e;//记录当前节点位置
                             }
+                            //索引改为 【原索引+oldCap】
                             else {
                                 if (hiTail == null)
                                     hiHead = e;
@@ -767,10 +780,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                                 hiTail = e;
                             }
                         } while ((e = next) != null);
+                        //原索引位置放入整个loHead链表
                         if (loTail != null) {
                             loTail.next = null;
                             newTab[j] = loHead;
                         }
+                        //原索引+oldCap位置放入整个hiHead链表
                         if (hiTail != null) {
                             hiTail.next = null;
                             newTab[j + oldCap] = hiHead;
@@ -784,11 +799,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * Replaces all linked nodes in bin at index for given hash unless
+     * 在Bin的索引里替换全部链接节点，除非table太小，这种情况下调整大小
      * table is too small, in which case resizes instead.
      */
     final void treeifyBin(Node<K,V>[] tab, int hash) {
         int n, index; Node<K,V> e;
-        if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)
+        if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)//为空或者小于最小的红黑树容量，resize()
             resize();
         else if ((e = tab[index = (n - 1) & hash]) != null) {
             TreeNode<K,V> hd = null, tl = null;
