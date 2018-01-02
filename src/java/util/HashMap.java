@@ -758,8 +758,23 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     if (e.next == null)
                         newTab[e.hash & (newCap - 1)] = e;
                     else if (e instanceof TreeNode)
-                        ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
-                    else { // preserve order(保持次序) 原来的hash值新增的那个bit是1还是0，是0的话索引没变，是1的话索引变成“原索引+oldCap”,即newTab[j + oldCap]
+                        ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);//http://blog.csdn.net/bnmb888/article/details/77164485
+                    else { // preserve order(保持次序) 
+                        //原来的hash值新增的那个bit是1还是0，是0的话索引没变，是1的话索引变成“原索引+oldCap”,即newTab[j + oldCap]
+                        /**
+                         *  示例1：
+                             e.hash=10 0000 1010
+                             oldCap=16 0001 0000
+                               &   =0  0000 0000       比较高位的第一位 0
+                            结论：元素位置在扩容后数组中的位置没有发生改变    放入 loHead
+
+                             示例2：
+                             e.hash=17 0001 0001
+                             oldCap=16 0001 0000
+                              &   =1   0001 0000      比较高位的第一位   1
+                            结论：元素位置在扩容后数组中的位置发生了改变，新的下标位置是[原下标位置+原数组长度]  放入 hiHead
+                         * 
+                         */
                         Node<K,V> loHead = null, loTail = null;//没有改变索引位置的记录loHead【链表】，loTail 当前链表的尾节点
                         Node<K,V> hiHead = null, hiTail = null;//改变索引位置的记录hiHead【链表】，hiTail 当前链表的尾节点
                         Node<K,V> next;
