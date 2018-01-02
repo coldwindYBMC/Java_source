@@ -414,6 +414,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * Holds cached entrySet(). Note that AbstractMap fields are used
      * for keySet() and values().
+     * 保存缓存的entrySet（）。 请注意，AbstractMap字段用于keySet（）和values（）。
      */
     transient Set<Map.Entry<K,V>> entrySet;
 
@@ -518,6 +519,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @param m the map
      * @param evict false when initially constructing this map, else
      * true (relayed to method afterNodeInsertion).
+     * 最初构造map时，设置为false。其他时候，设置为true（）
      */
     final void putMapEntries(Map<? extends K, ? extends V> m, boolean evict) {
         int s = m.size();
