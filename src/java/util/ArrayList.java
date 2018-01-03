@@ -183,9 +183,14 @@ public class ArrayList<E> extends AbstractList<E>
     public ArrayList(Collection<? extends E> c) {
         elementData = c.toArray();
         if ((size = elementData.length) != 0) {
-            // c.toArray might (incorrectly) not return Object[] (see 6260652)
+            /*c.toArray might (incorrectly) not return Object[] (see 6260652) 这个编号代表JDK bug库中的编号
+             *
+             * List<String> list = Arrays.asList("abc");需要注意，可以知道返回的实际类型是java.util.Arrays$ArrayList，而不是ArrayList。我们调用
+             * Object[] objArray = list.toArray();返回是String[]数组，
+             * 详见http://blog.csdn.net/huzhigenlaohu/article/details/51702737
+             */
             if (elementData.getClass() != Object[].class)
-                elementData = Arrays.copyOf(elementData, size, Object[].class);
+                elementData = Arrays.copyOf(elementData, size, Object[].class);//这个方法就是用来创建1个Object[]数组，这样数组中就可以存放任意对象了。
         } else {
             // replace with empty array.
             this.elementData = EMPTY_ELEMENTDATA;
@@ -196,6 +201,9 @@ public class ArrayList<E> extends AbstractList<E>
      * Trims the capacity of this <tt>ArrayList</tt> instance to be the
      * list's current size.  An application can use this operation to minimize
      * the storage of an <tt>ArrayList</tt> instance.
+     * elementData的数组设置为ArrayList实际的容量，动态增长的多余容量被删除了。
+     * 0，1，2，3，null,null 变为 0，1，2，3
+     * 用来提供缩小数组容量 
      */
     public void trimToSize() {
         modCount++;
@@ -352,6 +360,9 @@ public class ArrayList<E> extends AbstractList<E>
      * elements themselves are not copied.)
      *
      * @return a clone of this <tt>ArrayList</tt> instance
+     * 浅拷贝，修改内存具体值的的时候会影响原数组的指。
+     * 另，copy数组调用remove不会影响原数组，因为，remove是删掉copy到内存的引用，所以原数组不受影响。
+     * 
      */
     public Object clone() {
         try {
@@ -462,7 +473,7 @@ public class ArrayList<E> extends AbstractList<E>
      * @return <tt>true</tt> (as specified by {@link Collection#add})
      */
     public boolean add(E e) {
-        ensureCapacityInternal(size + 1);  // Increments modCount!!增加 修改次数，和线程安全有关系。
+        ensureCapacityInternal(size + 1);  // Increments modCount!!增加 修改次数，和线程安全有关系,arrayList线程不安全。
         elementData[size++] = e;
         return true;
     }
@@ -480,9 +491,19 @@ public class ArrayList<E> extends AbstractList<E>
         rangeCheckForAdd(index);
 
         ensureCapacityInternal(size + 1);  // Increments modCount!!
+        /*
+         *   src:源数组；	srcPos:源数组要复制的起始位置；
+         *   dest:目的数组；	destPos:目的数组放置的起始位置；	length:复制的长度。
+         *   注意：src and dest都必须是同类型或者可以进行转换类型的数组．
+         *   这个函数可以实现自己到自己复制，比如：
+         *   int[] fun ={0,1,2,3,4,5,6}; 
+         *   System.arraycopy(fun,0,fun,3,3);
+         *   则结果为：{0,1,2,0,1,2,6}; 
+         *   下面这行代码就是自己复制自己
+         */
         System.arraycopy(elementData, index, elementData, index + 1,
                          size - index);
-        elementData[index] = element;
+        elementData[index] = element;//在index位置插入元素，这个位置经过arraycopy后，留出了一个空位。
         size++;
     }
 
