@@ -503,7 +503,7 @@ public class ArrayList<E> extends AbstractList<E>
          */
         System.arraycopy(elementData, index, elementData, index + 1,
                          size - index);
-        elementData[index] = element;//在index位置插入元素，这个位置经过arraycopy后，留出了一个空位。
+        elementData[index] = element;//在index位置插入元素，这个位置经过arraycopy后，index处留出了一个空位。
         size++;
     }
 
@@ -517,16 +517,16 @@ public class ArrayList<E> extends AbstractList<E>
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
     public E remove(int index) {
-        rangeCheck(index);
+        rangeCheck(index);//检查下标的正确性
 
-        modCount++;
-        E oldValue = elementData(index);
+        modCount++;  //并不是原子操作，突发奇想。参考https://www.jianshu.com/p/a47b141452ce 
+        E oldValue = elementData(index);//获取该下标的内容
 
-        int numMoved = size - index - 1;
+        int numMoved = size - index - 1;//需要复制的长度，或者说需要移动的元素个数，如删除第一个元素，那么需要【0】下标以后的全部元素都要前移，这也是增删的效率不高原因。
         if (numMoved > 0)
             System.arraycopy(elementData, index+1, elementData, index,
-                             numMoved);
-        elementData[--size] = null; // clear to let GC do its work
+                             numMoved);//开始复制（移动）
+        elementData[--size] = null; // clear to let GC do its work  置空原尾部数据 
 
         return oldValue;
     }
@@ -543,6 +543,7 @@ public class ArrayList<E> extends AbstractList<E>
      *
      * @param o element to be removed from this list, if present
      * @return <tt>true</tt> if this list contained the specified element
+     * 根据对象移除，先找到下标，再移除。
      */
     public boolean remove(Object o) {
         if (o == null) {
@@ -866,8 +867,10 @@ public class ArrayList<E> extends AbstractList<E>
      * An optimized version of AbstractList.Itr
      */
     private class Itr implements Iterator<E> {
-        int cursor;       // index of next element to return
-        int lastRet = -1; // index of last element returned; -1 if no such
+        //这两个区别，在remove时能体现出来。删除成功后,cursor = lastRet 记录当前下标位置;但是当前操作下标lastRet = -1重置为-1，
+        //这也是不能连续在一个位置remove()，必须先next()得到新的lastRet下标;而next()会根据cursor当前元素下标进行移动。
+        int cursor;       // index of next element to return ,cursor可以理解为迭代器当前所在元素的指针也就是下标
+        int lastRet = -1; // index of last element returned; -1 if no such ,lastRet当前操作返回元素的下标.                   
         int expectedModCount = modCount;
 
         public boolean hasNext() {
@@ -876,15 +879,15 @@ public class ArrayList<E> extends AbstractList<E>
 
         @SuppressWarnings("unchecked")
         public E next() {
-            checkForComodification();
+            checkForComodification();//检查“快速失败(fail-fast)”机制
             int i = cursor;
             if (i >= size)
                 throw new NoSuchElementException();
             Object[] elementData = ArrayList.this.elementData;
             if (i >= elementData.length)
                 throw new ConcurrentModificationException();
-            cursor = i + 1;
-            return (E) elementData[lastRet = i];
+            cursor = i + 1;//索引下移
+            return (E) elementData[lastRet = i];//返回的是i下标，并且下标记录到lastRet
         }
 
         public void remove() {
