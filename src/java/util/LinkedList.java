@@ -31,7 +31,7 @@ import java.util.function.Consumer;
  * Doubly-linked list implementation of the {@code List} and {@code Deque}
  * interfaces.  Implements all optional list operations, and permits all
  * elements (including {@code null}).
- *
+ * 
  * <p>All of the operations perform as could be expected for a doubly-linked
  * list.  Operations that index into the list will traverse the list from
  * the beginning or the end, whichever is closer to the specified index.
@@ -77,7 +77,22 @@ import java.util.function.Consumer;
  * @see     List
  * @see     ArrayList
  * @since 1.2
- * @param <E> the type of elements held in this collection
+ * @param <E> the type of elements held in this collection 
+ * 
+ * 
+ * LinkedList底层使用双向链表，实现了List和deque。实现所有的可选List操作，并允许所有元素（包括空值）
+ * 其大小理论上仅受内存大小的限制
+ *
+ * 所有的操作都可以作为一个双联列表来执行（及对双向链表操作）。
+ * 把对链表的操作封装起来，并对外提供看起来是对普通列表操作的方法。
+ * 遍历从起点、终点、或指定位置开始
+ * 内部方法，注释会描述为节点的操作(如删除第一个节点)，公开的方法会描述为元素的操作(如删除第一个元素)
+ *
+ * LinkedList不是线程安全的，如果在多线程中使用（修改），需要在外部作同步处理。
+ * 
+ * 需要弄清元素（节点）的索引和位置的区别，不然有几个地方不好理解，具体在碰到的地方会解释。
+ * 
+ * 迭代器可以快速报错
  */
 
 public class LinkedList<E>
@@ -91,14 +106,14 @@ public class LinkedList<E>
      * Invariant: (first == null && last == null) ||
      *            (first.prev == null && first.item != null)
      */
-    transient Node<E> first;
+    transient Node<E> first;//首节点
 
     /**
      * Pointer to last node.
      * Invariant: (first == null && last == null) ||
      *            (last.next == null && last.item != null)
      */
-    transient Node<E> last;
+    transient Node<E> last;//尾节点
 
     /**
      * Constructs an empty list.
@@ -121,13 +136,14 @@ public class LinkedList<E>
 
     /**
      * Links e as first element.
+     * 作为第一个元素链接
      */
     private void linkFirst(E e) {
         final Node<E> f = first;
-        final Node<E> newNode = new Node<>(null, e, f);
+        final Node<E> newNode = new Node<>(null, e, f);//前节点为null，后节点为f
         first = newNode;
-        if (f == null)
-            last = newNode;
+        if (f == null)//原先头节点为null
+            last = newNode;//尾节点也设置为newNode
         else
             f.prev = newNode;
         size++;
@@ -167,6 +183,7 @@ public class LinkedList<E>
 
     /**
      * Unlinks non-null first node f.
+     * 移除第一个节点（头节点）
      */
     private E unlinkFirst(Node<E> f) {
         // assert f == first && f != null;
@@ -207,22 +224,22 @@ public class LinkedList<E>
      * Unlinks non-null node x.
      */
     E unlink(Node<E> x) {
-        // assert x != null;
+        // assert x != null；断言，x不会null
         final E element = x.item;
-        final Node<E> next = x.next;
+        final Node<E> next = x.next;//记录x节点的上一个和下一个节点
         final Node<E> prev = x.prev;
 
-        if (prev == null) {
-            first = next;
+        if (prev == null) {//x节点为头节点
+            first = next;//下一个节点成为头节点
         } else {
-            prev.next = next;
+            prev.next = next;//前节点 链接 后节点，隔空x节点
             x.prev = null;
         }
 
-        if (next == null) {
+        if (next == null) {//为节点
             last = prev;
         } else {
-            next.prev = prev;
+            next.prev = prev;//后节点 链接 前节点，隔空x节点
             x.next = null;
         }
 
@@ -354,7 +371,7 @@ public class LinkedList<E>
      */
     public boolean remove(Object o) {
         if (o == null) {
-            for (Node<E> x = first; x != null; x = x.next) {
+            for (Node<E> x = first; x != null; x = x.next) {//从头节点开始遍历
                 if (x.item == null) {
                     unlink(x);
                     return true;
@@ -401,55 +418,66 @@ public class LinkedList<E>
      * @return {@code true} if this list changed as a result of the call
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @throws NullPointerException if the specified collection is null
+     *  从指定位置（而不是下标索引！）
      */
     public boolean addAll(int index, Collection<? extends E> c) {
-        checkPositionIndex(index);
+        checkPositionIndex(index);//检查位置是否有效
 
-        Object[] a = c.toArray();
-        int numNew = a.length;
+        Object[] a = c.toArray();//转化为数组
+        int numNew = a.length;//长度
         if (numNew == 0)
             return false;
-
+      /***
+       * pred 需要插入位置点前一个Node,succ需要插入位置点前一个Node
+       * 如 0-1-2-3-4-5-6-7-8-9
+       * 从第三个位置开始插入 c 
+       * pred 为2
+       * succ 为3  node(3)
+       * c插入两者中间
+       */
         Node<E> pred, succ;
-        if (index == size) {
-            succ = null;
-            pred = last;
+        if (index == size) {//下标和链表长度相同，在链表后面添加
+            succ = null;//为null
+            pred = last;//添加点节点放到尾节点
         } else {
-            succ = node(index);
+            succ = node(index);//node()是根据下标索引读取的，而不是位置。
             pred = succ.prev;
         }
 
         for (Object o : a) {
-            @SuppressWarnings("unchecked") E e = (E) o;
-            Node<E> newNode = new Node<>(pred, e, null);
-            if (pred == null)
+            @SuppressWarnings("unchecked") E e = (E) o;//强转
+            Node<E> newNode = new Node<>(pred, e, null); 
+            if (pred == null)//插入在头节点
                 first = newNode;
             else
                 pred.next = newNode;
             pred = newNode;
         }
 
-        if (succ == null) {
+        if (succ == null) {//插入在尾节点
             last = pred;
         } else {
             pred.next = succ;
             succ.prev = pred;
         }
 
-        size += numNew;
-        modCount++;
+        size += numNew;//更改链表长度
+        modCount++;//修改次数++
         return true;
     }
 
     /**
      * Removes all of the elements from this list.
      * The list will be empty after this call returns.
+     * 移除这个列表对全部元素
+     * 这个方法返回后，列表将为空
      */
     public void clear() {
         // Clearing all of the links between nodes is "unnecessary", but:
         // - helps a generational GC if the discarded nodes inhabit
         //   more than one generation
         // - is sure to free memory even if there is a reachable Iterator
+        // 即使有其他的迭代器会引用这部分内存，也会确保内存被清除
         for (Node<E> x = first; x != null; ) {
             Node<E> next = x.next;
             x.item = null;
@@ -562,18 +590,19 @@ public class LinkedList<E>
 
     /**
      * Returns the (non-null) Node at the specified element index.
+     *\
      */
     Node<E> node(int index) {
         // assert isElementIndex(index);
-
-        if (index < (size >> 1)) {
+       
+        if (index < (size >> 1)) { //index 在链表的左半边，也就是说离头节点近
             Node<E> x = first;
             for (int i = 0; i < index; i++)
                 x = x.next;
             return x;
-        } else {
+        } else {            
             Node<E> x = last;
-            for (int i = size - 1; i > index; i--)
+            for (int i = size - 1; i > index; i--)//尾节点遍历，直到index后一个位置（i > index）
                 x = x.prev;
             return x;
         }
@@ -640,10 +669,10 @@ public class LinkedList<E>
     }
 
     // Queue operations.
-
+    //队列操作
     /**
      * Retrieves, but does not remove, the head (first element) of this list.
-     *
+     *检索第一个元素，但是不删除，如果为链表空则返回null
      * @return the head of this list, or {@code null} if this list is empty
      * @since 1.5
      */
@@ -658,6 +687,7 @@ public class LinkedList<E>
      * @return the head of this list
      * @throws NoSuchElementException if this list is empty
      * @since 1.5
+     * 检索第一个元素，但是不删除，如果为链表空则抛出NoSuchElementException异常
      */
     public E element() {
         return getFirst();
@@ -668,6 +698,7 @@ public class LinkedList<E>
      *
      * @return the head of this list, or {@code null} if this list is empty
      * @since 1.5
+     * 检索删除头节点，如果链表为null返回null
      */
     public E poll() {
         final Node<E> f = first;
@@ -680,6 +711,7 @@ public class LinkedList<E>
      * @return the head of this list
      * @throws NoSuchElementException if this list is empty
      * @since 1.5
+     * 检索删除头节点，如果链表为null，抛出NoSuchElementException异常
      */
     public E remove() {
         return removeFirst();
@@ -691,6 +723,7 @@ public class LinkedList<E>
      * @param e the element to add
      * @return {@code true} (as specified by {@link Queue#offer})
      * @since 1.5
+     * 调用add(e)
      */
     public boolean offer(E e) {
         return add(e);
@@ -728,6 +761,7 @@ public class LinkedList<E>
      * @return the first element of this list, or {@code null}
      *         if this list is empty
      * @since 1.6
+     * 和peek方法一样
      */
     public E peekFirst() {
         final Node<E> f = first;
@@ -754,6 +788,7 @@ public class LinkedList<E>
      * @return the first element of this list, or {@code null} if
      *     this list is empty
      * @since 1.6
+     *  检索并删除此列表的第一个元素，如果此列表为空，则返回null。和poll()一样
      */
     public E pollFirst() {
         final Node<E> f = first;
@@ -781,6 +816,7 @@ public class LinkedList<E>
      *
      * @param e the element to push
      * @since 1.6
+     * 链接到头节点，e作为第一个元素
      */
     public void push(E e) {
         addFirst(e);
@@ -809,6 +845,7 @@ public class LinkedList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if the list contained the specified element
      * @since 1.6
+     * 从头节点开始移除第一个符合该参数的节点
      */
     public boolean removeFirstOccurrence(Object o) {
         return remove(o);
@@ -822,6 +859,7 @@ public class LinkedList<E>
      * @param o element to be removed from this list, if present
      * @return {@code true} if the list contained the specified element
      * @since 1.6
+     * 从尾节点开始移除第一个符合该参数的节点
      */
     public boolean removeLastOccurrence(Object o) {
         if (o == null) {
@@ -843,6 +881,10 @@ public class LinkedList<E>
     }
 
     /**
+     *                    迭代器
+     * 
+     * 
+     * 
      * Returns a list-iterator of the elements in this list (in proper
      * sequence), starting at the specified position in the list.
      * Obeys the general contract of {@code List.listIterator(int)}.<p>
@@ -862,6 +904,7 @@ public class LinkedList<E>
      *         sequence), starting at the specified position in the list
      * @throws IndexOutOfBoundsException {@inheritDoc}
      * @see List#listIterator(int)
+     * 转为迭代器
      */
     public ListIterator<E> listIterator(int index) {
         checkPositionIndex(index);
@@ -1091,10 +1134,12 @@ public class LinkedList<E>
      *         is not a supertype of the runtime type of every element in
      *         this list
      * @throws NullPointerException if the specified array is null
+     * 链表转数组
+     * 
      */
     @SuppressWarnings("unchecked")
     public <T> T[] toArray(T[] a) {
-        if (a.length < size)
+        if (a.length < size)     //必须保证传入的数组长度大于链表的长度，否则会新建一个新的数组返回。http://blog.csdn.net/zhangyunfei_happy/article/details/51153754
             a = (T[])java.lang.reflect.Array.newInstance(
                                 a.getClass().getComponentType(), size);
         int i = 0;
