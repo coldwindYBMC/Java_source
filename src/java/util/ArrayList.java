@@ -202,8 +202,9 @@ public class ArrayList<E> extends AbstractList<E>
      * list's current size.  An application can use this operation to minimize
      * the storage of an <tt>ArrayList</tt> instance.
      * elementData的数组设置为ArrayList实际的容量，动态增长的多余容量被删除了。
-     * 0，1，2，3，null,null 变为 0，1，2，3
-     * 用来提供缩小数组容量 
+     * 0，1，2，3，null,null 变为 0，1，2，3  
+     * 注：自动增加的容量，并不会改变size大小。
+     *  用来提供缩小数组容量 https://www.cnblogs.com/hfczgo/p/4062826.html
      */
     public void trimToSize() {
         modCount++;
@@ -572,7 +573,7 @@ public class ArrayList<E> extends AbstractList<E>
         if (numMoved > 0)
             System.arraycopy(elementData, index+1, elementData, index,
                              numMoved);
-        elementData[--size] = null; // clear to let GC do its work
+        elementData[--size] = null; // clear to let GC do its work  设为null，方便GC
     }
 
     /**

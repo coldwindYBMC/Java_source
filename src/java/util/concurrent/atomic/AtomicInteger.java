@@ -128,6 +128,11 @@ public class AtomicInteger extends Number implements java.io.Serializable {
      * @param update the new value
      * @return {@code true} if successful. False return indicates that
      * the actual value was not equal to the expected value.
+     * CAS是Compare And Set的一个简称，如下理解：
+     *  1，已知当前内存里面的值current和预期要修改成的值new传入
+     *   2，内存中AtomicInteger对象地址对应的真实值(因为有可能别修改)real与current对比，
+     *   相等表示real未被修改过，是“安全”的，将new赋给real结束然后返回；不相等说明real已经被修改，结束并重新执行1直到修改成功
+     * http://blog.csdn.net/u013404471/article/details/47297123
      */
     public final boolean compareAndSet(int expect, int update) {
         return unsafe.compareAndSwapInt(this, valueOffset, expect, update);

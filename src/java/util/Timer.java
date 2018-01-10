@@ -88,17 +88,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Timer {
     /**
-     * The timer task queue.  This data structure is shared with the timer
+     * The timer task queue.  This data structure(结构体) is shared with the timer
      * thread.  The timer produces tasks, via its various schedule calls,
      * and the timer thread consumes, executing timer tasks as appropriate,
      * and removing them from the queue when they're obsolete.
+     * 计时器任务队列，这个数据结构体共享计时器线程
+     * 计时器通过各种计划调用产生任务，计时器线程消耗这些任务，根据需要执行计时器任务，并在 队列过时 时将其从队列中移除。
      */
-    private final TaskQueue queue = new TaskQueue();
+    private final TaskQueue queue = new TaskQueue();//任务队列,是一个优先级队列 TaskQueue是一个内部类
 
     /**
      * The timer thread.
+     * 计时器线程
      */
-    private final TimerThread thread = new TimerThread(queue);
+    private final TimerThread thread = new TimerThread(queue);////执行线程  
 
     /**
      * This object causes the timer's task execution thread to exit
@@ -111,7 +114,7 @@ public class Timer {
         protected void finalize() throws Throwable {
             synchronized(queue) {
                 thread.newTasksMayBeScheduled = false;
-                queue.notify(); // In case queue is empty.
+                queue.notify(); // In case queue is empty.（如果队列为null）
             }
         }
     };
@@ -141,6 +144,7 @@ public class Timer {
      * prolong the lifetime of the application.
      *
      * @param isDaemon true if the associated thread should run as a daemon.
+     * 如果关联的线程应作为守护程序运行，则为true。
      */
     public Timer(boolean isDaemon) {
         this("Timer-" + serialNumber(), isDaemon);
@@ -186,23 +190,30 @@ public class Timer {
      * @throws IllegalStateException if task was already scheduled or
      *         cancelled, timer was cancelled, or timer thread terminated.
      * @throws NullPointerException if {@code task} is null
+     * 
+     * 
+     * 在指定的延迟之后安排指定的任务执行
      */
     public void schedule(TimerTask task, long delay) {
         if (delay < 0)
             throw new IllegalArgumentException("Negative delay.");
-        sched(task, System.currentTimeMillis()+delay, 0);
+        sched(task, System.currentTimeMillis()+delay, 0);//当前时间+延迟时间=该任务要执行的时间
     }
 
     /**
      * Schedules the specified task for execution at the specified time.  If
      * the time is in the past, the task is scheduled for immediate execution.
      *
-     * @param task task to be scheduled.
-     * @param time time at which task is to be executed.
+     * @param task task to be scheduled.时刻表的任务
+     * @param time time at which task is to be executed.执行任务的时间   
      * @throws IllegalArgumentException if <tt>time.getTime()</tt> is negative.
      * @throws IllegalStateException if task was already scheduled or
      *         cancelled, timer was cancelled, or timer thread terminated.
      * @throws NullPointerException if {@code task} or {@code time} is null
+     * 
+     * 计划指定的任务在指定的时间执行
+     * 如果时间已经过去了，则该任务被安排立即执行
+     * 
      */
     public void schedule(TimerTask task, Date time) {
         sched(task, time.getTime(), 0);
@@ -232,13 +243,15 @@ public class Timer {
      *
      * @param task   task to be scheduled.
      * @param delay  delay in milliseconds before task is to be executed.
-     * @param period time in milliseconds between successive task executions.
+     * @param period time in milliseconds between successive task executions.在连续任务执行之间以毫秒为单位。
      * @throws IllegalArgumentException if {@code delay < 0}, or
      *         {@code delay + System.currentTimeMillis() < 0}, or
      *         {@code period <= 0}
      * @throws IllegalStateException if task was already scheduled or
      *         cancelled, timer was cancelled, or timer thread terminated.
      * @throws NullPointerException if {@code task} is null
+     * -------------------------------------------
+     * 指定的任务循环执行，从指定delay延迟时间开始执行后， 随后按规定的时间进行 period间隔进行(毫秒)。
      */
     public void schedule(TimerTask task, long delay, long period) {
         if (delay < 0)
@@ -280,6 +293,8 @@ public class Timer {
      * @throws IllegalStateException if task was already scheduled or
      *         cancelled, timer was cancelled, or timer thread terminated.
      * @throws NullPointerException if {@code task} or {@code firstTime} is null
+     * ---------------------------------
+     * 第一次执行任务时间，随后按照period间隔循环执行。
      */
     public void schedule(TimerTask task, Date firstTime, long period) {
         if (period <= 0)
@@ -382,6 +397,15 @@ public class Timer {
      * @throws IllegalStateException if task was already scheduled or
      *         cancelled, timer was cancelled, or timer thread terminated.
      * @throws NullPointerException if {@code task} is null
+     * 
+     * -----------------------------------------------------------
+     * 将指定的计时器任务安排在指定时间段的指定时间执行（毫秒）
+     * 如果period参赛是正的，则任务被安排重复执行
+     * 如果period参赛是0，则任务只会被执行一次
+     * 时间被指定为Date.getTime（）格式。 此方法检查定时器状态，任务状态和初始执行时间，但不检查周期period。
+     * ----------
+     * 所以， sched(task, firstTime.getTime(), -period);
+     * 为什么传 -period参数？？！！在loop()时，根据正负区别调整执行时间
      */
     private void sched(TimerTask task, long time, long period) {
         if (time < 0)
@@ -396,7 +420,7 @@ public class Timer {
             if (!thread.newTasksMayBeScheduled)
                 throw new IllegalStateException("Timer already cancelled.");
 
-            synchronized(task.lock) {
+            synchronized(task.lock) {  
                 if (task.state != TimerTask.VIRGIN)
                     throw new IllegalStateException(
                         "Task already scheduled or cancelled");
@@ -452,6 +476,7 @@ public class Timer {
      *
      * @return the number of tasks removed from the queue.
      * @since 1.5
+     * 从该计时器的任务队列中删除所有取消的任务。
      */
      public int purge() {
          int result = 0;
@@ -477,6 +502,11 @@ public class Timer {
  * waits for tasks on the timer queue, executions them when they fire,
  * reschedules repeating tasks, and removes cancelled tasks and spent
  * non-repeating tasks from the queue.
+ * -------------------------------------------
+ * 这个“辅助类”实现了定时器任务的执行线程，该线程等待定时器队列上的任务，
+ * 在触发时执行这些任务，1.重新安排重复任务，
+ * 2.并删除取消任务，
+ * 3.队列中消耗非重复任务。
  */
 class TimerThread extends Thread {
     /**
@@ -485,6 +515,13 @@ class TimerThread extends Thread {
      * is true and there are no more tasks in our queue, there is no
      * work left for us to do, so we terminate gracefully.  Note that
      * this field is protected by queue's monitor!
+     * 
+     * 
+     * 这个标志被(收割者？消费者？)设置为false，通知我们没有更多的活动引用到我们的Timer对象。 
+     * 一旦这个标志为true，我们的队列没有更多的任务，我们就没有工作要做，所以我们要优雅地终止。 
+     * 注意
+     * 这个字段受队列监视器的保护！
+     * 字面意思：新的任务可能被执行？
      */
     boolean newTasksMayBeScheduled = true;
 
@@ -493,6 +530,8 @@ class TimerThread extends Thread {
      * a reference to the Timer so the reference graph remains acyclic.
      * Otherwise, the Timer would never be garbage-collected and this
      * thread would never go away.
+     * 
+     * 
      */
     private TaskQueue queue;
 
@@ -502,9 +541,9 @@ class TimerThread extends Thread {
 
     public void run() {
         try {
-            mainLoop();
+            mainLoop();//执行一个死循环，不断从队列中取出任务并执行，没有任务时会阻塞 
         } finally {
-            // Someone killed this Thread, behave as if Timer cancelled
+            // Someone killed this Thread, behave as if Timer cancelled 有人杀死这个线程，定时器会被取消
             synchronized(queue) {
                 newTasksMayBeScheduled = false;
                 queue.clear();  // Eliminate obsolete references
@@ -519,31 +558,46 @@ class TimerThread extends Thread {
         while (true) {
             try {
                 TimerTask task;
-                boolean taskFired;
+                boolean taskFired;//任务触发boolean
                 synchronized(queue) {
-                    // Wait for queue to become non-empty
-                    while (queue.isEmpty() && newTasksMayBeScheduled)
+                    // Wait for queue to become non-empty，等待队列为非空
+                    while (queue.isEmpty() && newTasksMayBeScheduled)//队列为空，并且newTasksMayBeScheduled为true
                         queue.wait();
                     if (queue.isEmpty())
-                        break; // Queue is empty and will forever remain; die
+                        break; // Queue is empty and will forever remain; die 队列为空，永远保持
 
                     // Queue nonempty; look at first evt and do the right thing
                     long currentTime, executionTime;
-                    task = queue.getMin();
+                    task = queue.getMin();//取任务
                     synchronized(task.lock) {
-                        if (task.state == TimerTask.CANCELLED) {
-                            queue.removeMin();
+                        if (task.state == TimerTask.CANCELLED) {//这个任务被取消
+                            queue.removeMin();//移除该任务
                             continue;  // No action required, poll queue again
                         }
-                        currentTime = System.currentTimeMillis();
-                        executionTime = task.nextExecutionTime;
-                        if (taskFired = (executionTime<=currentTime)) {
-                            if (task.period == 0) { // Non-repeating, remove
+                        currentTime = System.currentTimeMillis();//当前时间
+                        executionTime = task.nextExecutionTime;//任务的下一次执行时间(对于重复执行的任务，这个字段在每个任务执行之前被更新。)
+                        if (taskFired = (executionTime<=currentTime)) {//是否可以执行
+                            if (task.period == 0) { // Non-repeating, remove，只执行一次，然后移除
                                 queue.removeMin();
-                                task.state = TimerTask.EXECUTED;
-                            } else { // Repeating task, reschedule
+                                task.state = TimerTask.EXECUTED;//该状态表示:非重复的任务已经执行（或正在执行）并且没有被取消。
+                            } else { // Repeating task, reschedule 重复任务，改下次时间
+                              /** 将与头任务关联的nextExecutionTime设置为指定的值，并相应地调整优先级队列。
+                                * 如果period为负数(方法调用时会转为负数传入)，当前时间+间隔执行时间
+                                * 为正值，nextExecutionTime时间+间隔执行时间
+                                * 区别，nextExecutionTime 可能小于currentTime
+                                *  一个是根据当前时间增加相应间隔时间，更符合执行后一段间隔后再执行
+                                *  一个是根据nextExecutionTime参数时间增加相应间隔时间，更符合固定时间断执行
+                                *
+                                * 类scheduleAtFixedRate()方法 传入为正值
+                                * 类schedule()方法传入负值
+                                *
+                                * 例：比如extExecutionTime为 2018.1.10 17:00 开始执行
+                                * scheduleAtFixedRate()方法, 可以说一小时执行一次是指，雷打不动，下次执行时间改为 18点，19点，20点执行
+                                * schedule()方法是值，18点执行。但是很不巧，18点1秒才执行了，那么下次执行时间改为19点1秒执行。
+                                *
+                                **/       
                                 queue.rescheduleMin(
-                                  task.period<0 ? currentTime   - task.period
+                                  task.period<0 ? currentTime   - task.period    
                                                 : executionTime + task.period);
                             }
                         }
@@ -573,13 +627,20 @@ class TaskQueue {
      * ordered on the nextExecutionTime field: The TimerTask with the lowest
      * nextExecutionTime is in queue[1] (assuming the queue is nonempty).  For
      * each node n in the heap, and each descendant of n, d,
-     * n.nextExecutionTime <= d.nextExecutionTime.
+     * n.nextExecutionTime <= d.nextExecutionTime.  
+     * -----------------------------------------------------------------------
+     * 优先级队列表示 平衡二叉堆：queue[n]的两个孩子是queue[2*n] 和 queue[2*n+1]。
+     * 这个优先级队列是根据nextExecutionTime字段排序:这个计时器任务将最低的nextExecutionTime
+     * 放在queue[1]中(假设队列是非空的)。对每个节点n，和每一个n的后代 d 
+     * n.nextExecutionTime <= d.nextExecutionTime. 
+     * 也就是说，父节点优先级大于该节点的子节点
      */
-    private TimerTask[] queue = new TimerTask[128];
+    private TimerTask[] queue = new TimerTask[128];//数组存储，大小128.
 
     /**
      * The number of tasks in the priority queue.  (The tasks are stored in
      * queue[1] up to queue[size]).
+     * 优先级队列任务对数量
      */
     private int size = 0;
 
@@ -594,17 +655,19 @@ class TaskQueue {
      * Adds a new task to the priority queue.
      */
     void add(TimerTask task) {
-        // Grow backing store if necessary
+        // Grow backing store if necessary 
         if (size + 1 == queue.length)
-            queue = Arrays.copyOf(queue, 2*queue.length);
+            queue = Arrays.copyOf(queue, 2*queue.length);//扩容2倍
 
         queue[++size] = task;
-        fixUp(size);
+        fixUp(size);//调整堆结构---->所谓的上滤 ，上滤就是把当前节点向上寻找其该在的位置
     }
 
     /**
      * Return the "head task" of the priority queue.  (The head task is an
      * task with the lowest nextExecutionTime.)
+     * 返回在优先级队列中的 头任务（头任务是一个拥有最小nextExecutionTime的任务）
+     * 优先级最高的元素始终在第一个位置  
      */
     TimerTask getMin() {
         return queue[1];
@@ -632,17 +695,19 @@ class TaskQueue {
      * Removes the ith element from queue without regard for maintaining
      * the heap invariant.  Recall that queue is one-based, so
      * 1 <= i <= size.
+     * 从队列中移除第i个元素，而不考虑维护堆。
      */
     void quickRemove(int i) {
         assert i <= size;
 
-        queue[i] = queue[size];
+        queue[i] = queue[size];//直接将最后一个任务提到要删除的任务位置
         queue[size--] = null;  // Drop extra ref to prevent memory leak
     }
 
     /**
      * Sets the nextExecutionTime associated with the head task to the
      * specified value, and adjusts priority queue accordingly.
+     * 将与头任务关联的nextExecutionTime设置为指定的值，并相应地调整优先级队列。
      */
     void rescheduleMin(long newTime) {
         queue[1].nextExecutionTime = newTime;
@@ -675,13 +740,16 @@ class TaskQueue {
      * This method functions by "promoting" queue[k] up the hierarchy
      * (by swapping it with its parent) repeatedly until queue[k]'s
      * nextExecutionTime is greater than or equal to that of its parent.
+     * 每次增加堆顶元素后需要调用fixup上滤操作，维持堆的特性
      */
     private void fixUp(int k) {
         while (k > 1) {
-            int j = k >> 1;
+            int j = k >> 1;//右移
             if (queue[j].nextExecutionTime <= queue[k].nextExecutionTime)
                 break;
-            TimerTask tmp = queue[j];  queue[j] = queue[k]; queue[k] = tmp;
+            TimerTask tmp = queue[j];  
+            queue[j] = queue[k]; 
+            queue[k] = tmp;
             k = j;
         }
     }
@@ -695,6 +763,7 @@ class TaskQueue {
      * This method functions by "demoting" queue[k] down the hierarchy
      * (by swapping it with its smaller child) repeatedly until queue[k]'s
      * nextExecutionTime is less than or equal to those of its children.
+     * 每次删除堆顶元素后需要调用fixdown下滤操作，维持堆的特性
      */
     private void fixDown(int k) {
         int j;
@@ -712,6 +781,7 @@ class TaskQueue {
     /**
      * Establishes the heap invariant (described above) in the entire tree,
      * assuming nothing about the order of the elements prior to the call.
+     * 建堆操作，从第一个非叶子结点开始。  
      */
     void heapify() {
         for (int i = size/2; i >= 1; i--)

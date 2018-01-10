@@ -83,11 +83,11 @@ class Random implements java.io.Serializable {
      * (The specs for the methods in this class describe the ongoing
      * computation of this value.)
      */
-    private final AtomicLong seed;
+    private final AtomicLong seed;//原子变量, AtomicInteger等
 
-    private static final long multiplier = 0x5DEECE66DL;
-    private static final long addend = 0xBL;
-    private static final long mask = (1L << 48) - 1;
+    private static final long multiplier = 0x5DEECE66DL;//构造函数内，对种子进行操作参数？
+    private static final long addend = 0xBL;//得到随机数时，一个增量？
+    private static final long mask = (1L << 48) - 1;//构造函数内，对种子进行操作参数？
 
     private static final double DOUBLE_UNIT = 0x1.0p-53; // 1.0 / (1L << 53)
 
@@ -100,18 +100,36 @@ class Random implements java.io.Serializable {
      * Creates a new random number generator. This constructor sets
      * the seed of the random number generator to a value very likely
      * to be distinct from any other invocation of this constructor.
+     * 创建一个新的随机数生成器。这个构造函数将随机数生成器的种子设置为一个非常可能不同于此构造函数的任何其他调用的值。
+     * System.nanoTime()，输出的精度是纳秒级别，但是只能用来计时。不方便表示时间http://blog.csdn.net/yuansuruanjian/article/details/8562890
+     * System.nanoTime(),在多核上的可能的隐患http://hold-on.iteye.com/blog/1943436 及其 相应的反驳
+     * https://stackoverflow.com/questions/510462/is-system-nanotime-completely-useless
+     * 
+     * ----------------------------------------
+     *  根据注释
+     * to measure how long some code takes to execute:
+     * 来衡量代码运行了多长时间
+     * To compare two nanoTime values
+     * one should use {@code t1 - t0 < 0}, not {@code t1 < t0},
+     * because of the possibility of numerical overflow.
+     * 
+     * 比较两个nanoTime值的大小应该使用t1 - t0 < 0的方法，因为t1 < t0可能回数值溢出
+     * 
+     * 
+     * 
+     * http://moon-walker.iteye.com/blog/2377722 博客
      */
     public Random() {
         this(seedUniquifier() ^ System.nanoTime());
     }
-
+    //设置当前种子的算法?
     private static long seedUniquifier() {
         // L'Ecuyer, "Tables of Linear Congruential Generators of
         // Different Sizes and Good Lattice Structure", 1999
         for (;;) {
-            long current = seedUniquifier.get();
-            long next = current * 181783497276652981L;
-            if (seedUniquifier.compareAndSet(current, next))
+            long current = seedUniquifier.get();//常量Long型的8682522807148012L
+            long next = current * 181783497276652981L;///跟另外一个常量相乘  
+            if (seedUniquifier.compareAndSet(current, next))// (cas)原子性比较 赋值  ,会调用到一个本地方法
                 return next;
         }
     }
@@ -143,7 +161,7 @@ class Random implements java.io.Serializable {
     }
 
     private static long initialScramble(long seed) {
-        return (seed ^ multiplier) & mask;
+        return (seed ^ multiplier) & mask;//先”异或”，再”按位与”， multiplier和mask都是静态的final成员  
     }
 
     /**
@@ -324,6 +342,8 @@ class Random implements java.io.Serializable {
      *
      * @return the next pseudorandom, uniformly distributed {@code int}
      *         value from this random number generator's sequence
+     * //整型的范围：2的负32次方--2的32次方  
+     * //无参数
      */
     public int nextInt() {
         return next(32);

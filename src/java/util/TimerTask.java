@@ -58,6 +58,7 @@ public abstract class TimerTask implements Runnable {
     /**
      * This non-repeating task has already executed (or is currently
      * executing) and has not been cancelled.
+     * 这个非重复的任务已经执行（或正在执行）并且没有被取消。
      */
     static final int EXECUTED    = 2;
 
