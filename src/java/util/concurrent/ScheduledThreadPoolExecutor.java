@@ -172,11 +172,13 @@ public class ScheduledThreadPoolExecutor
 
     /**
      * Returns current nanosecond time.
+     * 返回纳秒时间，不能用来计算日期
      */
     final long now() {
         return System.nanoTime();
     }
 
+    //ScheduledFutureTask继承自FutureTask，并且实现了Delayed接口
     private class ScheduledFutureTask<V>
             extends FutureTask<V> implements RunnableScheduledFuture<V> {
 
@@ -461,6 +463,7 @@ public class ScheduledThreadPoolExecutor
      */
     public ScheduledThreadPoolExecutor(int corePoolSize,
                                        RejectedExecutionHandler handler) {
+        //核心线程数量，最大线程数量，超时时间(保活时间)，时间类型，所用队列实例，错误handler处理类
         super(corePoolSize, Integer.MAX_VALUE, 0, NANOSECONDS,
               new DelayedWorkQueue(), handler);
     }
@@ -478,6 +481,8 @@ public class ScheduledThreadPoolExecutor
      * @throws IllegalArgumentException if {@code corePoolSize < 0}
      * @throws NullPointerException if {@code threadFactory} or
      *         {@code handler} is null
+     * 
+     * 核心线程数，线程工厂，失败处理handler
      */
     public ScheduledThreadPoolExecutor(int corePoolSize,
                                        ThreadFactory threadFactory,
@@ -488,6 +493,7 @@ public class ScheduledThreadPoolExecutor
 
     /**
      * Returns the trigger time of a delayed action.
+     * 返回延迟动作的触发时间。
      */
     private long triggerTime(long delay, TimeUnit unit) {
         return triggerTime(unit.toNanos((delay < 0) ? 0 : delay));
@@ -495,6 +501,7 @@ public class ScheduledThreadPoolExecutor
 
     /**
      * Returns the trigger time of a delayed action.
+     * 返回延迟动作的触发时间。
      */
     long triggerTime(long delay) {
         return now() +
@@ -507,11 +514,12 @@ public class ScheduledThreadPoolExecutor
      * This may occur if a task is eligible to be dequeued, but has
      * not yet been, while some other task is added with a delay of
      * Long.MAX_VALUE.
+     * 
      */
     private long overflowFree(long delay) {
         Delayed head = (Delayed) super.getQueue().peek();
         if (head != null) {
-            long headDelay = head.getDelay(NANOSECONDS);
+            long headDelay = head.getDelay(NANOSECONDS);//以给定的时间单位返回与此对象关联的剩余延迟。
             if (headDelay < 0 && (delay - headDelay < 0))
                 delay = Long.MAX_VALUE + headDelay;
         }
@@ -554,6 +562,13 @@ public class ScheduledThreadPoolExecutor
      * @throws RejectedExecutionException {@inheritDoc}
      * @throws NullPointerException       {@inheritDoc}
      * @throws IllegalArgumentException   {@inheritDoc}
+     * 延迟initialDelay时间后开始执行command，并且按照period时间周期性重复调用，当任务执行时间大于间隔时间时，之后的任务都会延迟
+     * 与Timer中的schedule方法类似
+     * _______________________________________________________________________________________________
+     * 
+     * Timer中：
+     *  scheduleAtFixedRate()方法, 可以说一小时执行一次是指，雷打不动，下次执行时间改为 18点，19点，20点执行
+        schedule()方法是值，18点执行。但是很不巧，18点1秒才执行了，那么下次执行时间改为19点1秒执行。
      */
     public ScheduledFuture<?> scheduleAtFixedRate(Runnable command,
                                                   long initialDelay,
@@ -796,15 +811,19 @@ public class ScheduledThreadPoolExecutor
      * which they will execute.
      *
      * @return the task queue
+     * 得到任务队列
      */
     public BlockingQueue<Runnable> getQueue() {
-        return super.getQueue();
+        return super.getQueue();//  ThreadPoolExecutor 类  BlockingQueue<Runnable> workQueue;
     }
 
     /**
      * Specialized delay queue. To mesh with TPE declarations, this
      * class must be declared as a BlockingQueue<Runnable> even though
      * it can only hold RunnableScheduledFutures.
+     * ----------------------------------------------
+     * 特殊的延迟队列。这个类必须声明为BlockingQueue <Runnable>，即使它只能保存RunnableScheduledFutures。？
+     * DelayedWorkQueue 阻塞队列 & 延迟队列
      */
     static class DelayedWorkQueue extends AbstractQueue<Runnable>
         implements BlockingQueue<Runnable> {
@@ -832,10 +851,10 @@ public class ScheduledThreadPoolExecutor
          * identified by heapIndex.
          */
 
-        private static final int INITIAL_CAPACITY = 16;
+        private static final int INITIAL_CAPACITY = 16;//初始容量
         private RunnableScheduledFuture<?>[] queue =
-            new RunnableScheduledFuture<?>[INITIAL_CAPACITY];
-        private final ReentrantLock lock = new ReentrantLock();
+            new RunnableScheduledFuture<?>[INITIAL_CAPACITY];//数组
+        private final ReentrantLock lock = new ReentrantLock();//锁
         private int size = 0;
 
         /**

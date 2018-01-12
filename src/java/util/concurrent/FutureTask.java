@@ -90,13 +90,13 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * NEW -> INTERRUPTING -> INTERRUPTED
      */
     private volatile int state;
-    private static final int NEW          = 0;
-    private static final int COMPLETING   = 1;
-    private static final int NORMAL       = 2;
-    private static final int EXCEPTIONAL  = 3;
-    private static final int CANCELLED    = 4;
-    private static final int INTERRUPTING = 5;
-    private static final int INTERRUPTED  = 6;
+    private static final int NEW          = 0; //新建
+    private static final int COMPLETING   = 1; // 执行中  
+    private static final int NORMAL       = 2;  //正常
+    private static final int EXCEPTIONAL  = 3;  //异常 
+    private static final int CANCELLED    = 4;  //取消
+    private static final int INTERRUPTING = 5; // 中断中
+    private static final int INTERRUPTED  = 6; //被中断
 
     /** The underlying callable; nulled out after running */
     private Callable<V> callable;

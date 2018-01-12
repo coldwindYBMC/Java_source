@@ -106,6 +106,10 @@ public interface ScheduledExecutorService extends ExecutorService {
      * @throws RejectedExecutionException if the task cannot be
      *         scheduled for execution
      * @throws NullPointerException if command is null
+     * 
+     * 
+     * 
+     * 创建并执行 给定延迟时间后，自动启用一次性操作。
      */
     public ScheduledFuture<?> schedule(Runnable command,
                                        long delay, TimeUnit unit);
@@ -122,6 +126,9 @@ public interface ScheduledExecutorService extends ExecutorService {
      * @throws RejectedExecutionException if the task cannot be
      *         scheduled for execution
      * @throws NullPointerException if callable is null
+     * 
+     * 创建并执行在给定延迟时间后，变为启用的ScheduledFuture。
+     * 
      */
     public <V> ScheduledFuture<V> schedule(Callable<V> callable,
                                            long delay, TimeUnit unit);
