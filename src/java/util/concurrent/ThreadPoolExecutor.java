@@ -901,7 +901,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * @param shutdownOK true if should return true if SHUTDOWN
      */
     final boolean isRunningOrShutdown(boolean shutdownOK) {
-        int rs = runStateOf(ctl.get());
+        int rs = runStateOf(ctl.get());//运行状态
         return rs == RUNNING || (rs == SHUTDOWN && shutdownOK);
     }
 
@@ -1044,7 +1044,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         mainLock.lock();
         try {
             if (w != null)
-                workers.remove(w);
+                workers.remove(w); 
             decrementWorkerCount();//原子操作 c--
             tryTerminate();
         } finally {
@@ -1685,9 +1685,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
     void ensurePrestart() {
         int wc = workerCountOf(ctl.get());
         if (wc < corePoolSize)
-            addWorker(null, true);
-        else if (wc == 0)
-            addWorker(null, false);
+            addWorker(null, true);//与最大线程数量比较，创建一个没有任务的空任务的Worker(线程)
+        else if (wc == 0)   //工作线程数量为0 
+            addWorker(null, false);//与核心线程比较，创建一个没有任务的空任务的Worker(线程)
     }
 
     /**

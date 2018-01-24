@@ -102,7 +102,11 @@ import java.util.function.UnaryOperator;
  * @see     Vector
  * @since   1.2
  */
-
+/*这里有三个标记接口（没有任何方法，仅标记功能，java源码中一共三个）
+ *RandomAccess,判断集合是否能快速访问，也就是通过索引下标能否快速的移动到对应的元素上
+ *Cloneable,是否可以被克隆
+ *Serializable是否可序列化
+ */
 public class ArrayList<E> extends AbstractList<E>
         implements List<E>, RandomAccess, Cloneable, java.io.Serializable
 {

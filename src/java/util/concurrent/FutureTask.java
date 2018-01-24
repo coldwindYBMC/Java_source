@@ -166,7 +166,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
               UNSAFE.compareAndSwapInt(this, stateOffset, NEW,
                   mayInterruptIfRunning ? INTERRUPTING : CANCELLED)))
             return false;
-        try {    // in case call to interrupt throws exception
+        try {    // in case call to interrupt throws exception，调用中断抛出异常
             if (mayInterruptIfRunning) {
                 try {
                     Thread t = runner;
@@ -360,6 +360,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
     /**
      * Removes and signals all waiting threads, invokes done(), and
      * nulls out callable.
+     * 删除并发信号通知所有正在等待的线程，调用done（），并清空可调用。
      */
     private void finishCompletion() {
         // assert state > COMPLETING;
@@ -374,7 +375,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
                     WaitNode next = q.next;
                     if (next == null)
                         break;
-                    q.next = null; // unlink to help gc
+                    q.next = null; // unlink to help gc，解除连接，帮助gc
                     q = next;
                 }
                 break;

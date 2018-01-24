@@ -594,7 +594,7 @@ class TimerThread extends Thread {
                                 * 例：比如extExecutionTime为 2018.1.10 17:00 开始执行
                                 * scheduleAtFixedRate()方法, 可以说一小时执行一次是指，雷打不动，下次执行时间改为 18点，19点，20点执行
                                 * schedule()方法是值，18点执行。但是很不巧，18点1秒才执行了，那么下次执行时间改为19点1秒执行。
-                                *
+                                * 
                                 **/       
                                 queue.rescheduleMin(
                                   task.period<0 ? currentTime   - task.period    

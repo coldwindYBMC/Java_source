@@ -152,15 +152,17 @@ public class ScheduledThreadPoolExecutor
     /**
      * False if should cancel/suppress periodic tasks on shutdown.
      */
-    private volatile boolean continueExistingPeriodicTasksAfterShutdown;
+    private volatile boolean continueExistingPeriodicTasksAfterShutdown;//继续存在周期性任务 shutdown之后
 
     /**
      * False if should cancel non-periodic tasks on shutdown.
+     * 如果为fasle shutdown之后应该返回 非周期任务？
      */
-    private volatile boolean executeExistingDelayedTasksAfterShutdown = true;
+    private volatile boolean executeExistingDelayedTasksAfterShutdown = true;//继续存在延迟任务 shutdown之后
 
     /**
      * True if ScheduledFutureTask.cancel should remove from queue
+     * 如果ScheduledFutureTask被注销，应该把它从queue移除掉， 为true
      */
     private volatile boolean removeOnCancel = false;
 
@@ -185,7 +187,10 @@ public class ScheduledThreadPoolExecutor
         /** Sequence number to break ties FIFO */
         private final long sequenceNumber;
 
-        /** The time the task is enabled to execute in nanoTime units */
+        /** 
+         * The time the task is enabled to execute in nanoTime units 
+         * 任务开始执行的时间
+         */
         private long time;
 
         /**
@@ -206,6 +211,7 @@ public class ScheduledThreadPoolExecutor
 
         /**
          * Creates a one-shot action with given nanoTime-based trigger time.
+         * 使用给定的基于nanoTime的触发时间创建一次性操作。
          */
         ScheduledFutureTask(Runnable r, V result, long ns) {
             super(r, result);
@@ -216,10 +222,11 @@ public class ScheduledThreadPoolExecutor
 
         /**
          * Creates a periodic action with given nano time and period.
+         * 用给定的纳秒时间和周期创建一个周期性的动作。
          */
         ScheduledFutureTask(Runnable r, V result, long ns, long period) {
             super(r, result);
-            this.time = ns;
+            this.time = ns;    //initialDelay the time to delay first execution
             this.period = period;
             this.sequenceNumber = sequencer.getAndIncrement();
         }
@@ -234,7 +241,7 @@ public class ScheduledThreadPoolExecutor
             this.sequenceNumber = sequencer.getAndIncrement();
         }
 
-        public long getDelay(TimeUnit unit) {
+        public long getDelay(TimeUnit unit) {//now(）纳秒
             return unit.convert(time - now(), NANOSECONDS);
         }
 
@@ -267,7 +274,8 @@ public class ScheduledThreadPoolExecutor
         }
 
         /**
-         * Sets the next time to run for a periodic task.
+         * Sets the next time to run for a periodic(定期) task.
+         * 设置下一次运行周期性任务。
          */
         private void setNextRunTime() {
             long p = period;
@@ -286,6 +294,7 @@ public class ScheduledThreadPoolExecutor
 
         /**
          * Overrides FutureTask version so as to reset/requeue if periodic.
+         * 覆盖FutureTask版本，以便定期重置/重新排序。
          */
         public void run() {
             boolean periodic = isPeriodic();
@@ -324,14 +333,14 @@ public class ScheduledThreadPoolExecutor
      * @param task the task
      */
     private void delayedExecute(RunnableScheduledFuture<?> task) {
-        if (isShutdown())
-            reject(task);
+        if (isShutdown())//线程池 不在 RUNNING 状态
+            reject(task);//表示拒绝执行新提交的任务,并且在线程池中的handle处理失败
         else {
-            super.getQueue().add(task);
-            if (isShutdown() &&
+            super.getQueue().add(task);//DelayedWorkQueue.add()
+            if (isShutdown() &&      
                 !canRunInCurrentRunState(task.isPeriodic()) &&
                 remove(task))
-                task.cancel(false);
+                task.cancel(false);//注销，mayInterruptIfRunning 字面意思：如果正在运行是否可能被中断
             else
                 ensurePrestart();
         }
@@ -391,15 +400,14 @@ public class ScheduledThreadPoolExecutor
      * This method can be used to override the concrete
      * class used for managing internal tasks.
      * The default implementation simply returns the given task.
-     *
+     * 修改或替换用于执行可运行的任务。 这个方法可以用来覆盖用于管理内部任务的具体类。默认实现只是返回给定的任务
      * @param runnable the submitted Runnable
      * @param task the task created to execute the runnable
      * @param <V> the type of the task's result
      * @return a task that can execute the runnable
      * @since 1.6
      */
-    protected <V> RunnableScheduledFuture<V> decorateTask(
-        Runnable runnable, RunnableScheduledFuture<V> task) {
+    protected <V> RunnableScheduledFuture<V> decorateTask( Runnable runnable, RunnableScheduledFuture<V> task) {
         return task;
     }
 
@@ -578,7 +586,7 @@ public class ScheduledThreadPoolExecutor
             throw new NullPointerException();
         if (period <= 0)
             throw new IllegalArgumentException();
-        ScheduledFutureTask<Void> sft =
+        ScheduledFutureTask<Void> sft =                     //new ScheduledFutureTask
             new ScheduledFutureTask<Void>(command,
                                           null,
                                           triggerTime(initialDelay, unit),
@@ -853,7 +861,7 @@ public class ScheduledThreadPoolExecutor
 
         private static final int INITIAL_CAPACITY = 16;//初始容量
         private RunnableScheduledFuture<?>[] queue =
-            new RunnableScheduledFuture<?>[INITIAL_CAPACITY];//数组
+            new RunnableScheduledFuture<?>[INITIAL_CAPACITY];//数组 ScheduledFutureTask implements RunnableScheduledFuture
         private final ReentrantLock lock = new ReentrantLock();//锁
         private int size = 0;
 

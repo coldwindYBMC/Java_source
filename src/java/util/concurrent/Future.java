@@ -112,9 +112,15 @@ public interface Future<V> {
      * @param mayInterruptIfRunning {@code true} if the thread executing this
      * task should be interrupted; otherwise, in-progress tasks are allowed
      * to complete
+     * true :如果执行这个任务的线程应该被中断， 否则false，正在进行的任务被允许完成
+     * 
      * @return {@code false} if the task could not be cancelled,
      * typically because it has already completed normally;
      * {@code true} otherwise
+     * fakse : 如果任务不能取消，通常是因为它已经正常完成;
+     *  true 否则,取消成功
+     * 
+     * mayInterruptIfRunning 字面意思：如果正在运行是否可能被中断
      */
     boolean cancel(boolean mayInterruptIfRunning);
 
