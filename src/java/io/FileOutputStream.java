@@ -48,28 +48,34 @@ import sun.nio.ch.FileChannelImpl;
  * @see     java.io.FileInputStream
  * @see     java.nio.file.Files#newOutputStream
  * @since   JDK1.0
+ * 这是一个将FileDescriptor适配成OutputStream接口的对象形式的适配器模式
  */
 public
 class FileOutputStream extends OutputStream
 {
     /**
      * The system dependent file descriptor.
+     * 文件描述符类---此处用于打开文件的句柄
      */
     private final FileDescriptor fd;
 
     /**
      * True if the file is opened for append.
+     * 如果为true，就在文件最后写入
      */
     private final boolean append;
 
     /**
      * The associated channel, initialized lazily.
+     * fileChannel:A channel for reading, writing, mapping, and manipulating a file.
+     * 一个读写映射操作文件的通道类
      */
     private FileChannel channel;
 
     /**
      * The path of the referenced file
      * (null if the stream is created with a file descriptor)
+     * 文件路径
      */
     private final String path;
 

@@ -51,6 +51,7 @@ public abstract class Writer implements Appendable, Closeable, Flushable {
 
     /**
      * Temporary buffer used to hold writes of strings and single characters
+     * 用来保存字符串和单个字符的缓存
      */
     private char[] writeBuffer;
 

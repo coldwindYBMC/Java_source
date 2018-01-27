@@ -50,7 +50,7 @@ class PipedOutputStream extends OutputStream {
            more sophisticated.  Either using thread groups (but what about
            pipes within a thread?) or using finalization (but it may be a
            long time until the next GC). */
-    private PipedInputStream sink;
+    private PipedInputStream sink;//大部分方法，都是直接调用input相应的方法
 
     /**
      * Creates a piped output stream connected to the specified piped
@@ -99,10 +99,10 @@ class PipedOutputStream extends OutputStream {
         } else if (sink != null || snk.connected) {
             throw new IOException("Already connected");
         }
-        sink = snk;
+        sink = snk;//初始化
         snk.in = -1;
         snk.out = 0;
-        snk.connected = true;
+        snk.connected = true;//管道连接状态
     }
 
     /**

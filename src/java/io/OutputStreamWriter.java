@@ -180,6 +180,7 @@ public class OutputStreamWriter extends Writer {
      * Flushes the output buffer to the underlying byte stream, without flushing
      * the byte stream itself.  This method is non-private only so that it may
      * be invoked by PrintStream.
+     * 将输出缓冲区刷新到底层直接流，而不刷新字节流本身
      */
     void flushBuffer() throws IOException {
         se.flushBuffer();

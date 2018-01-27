@@ -46,17 +46,21 @@ public class ByteArrayOutputStream extends OutputStream {
 
     /**
      * The buffer where data is stored.
+     * 保存“字节数组输出流”数据的数组
      */
     protected byte buf[];
 
     /**
      * The number of valid bytes in the buffer.
+     * buffer的有效数据大小
      */
     protected int count;
 
     /**
      * Creates a new byte array output stream. The buffer capacity is
      * initially 32 bytes, though its size increases if necessary.
+     * 创建一个字节数组输出流，这个buffer大小初始化为32。必要时增加。
+     * 构造函数：默认创建的字节数组大小是32。
      */
     public ByteArrayOutputStream() {
         this(32);
@@ -86,6 +90,7 @@ public class ByteArrayOutputStream extends OutputStream {
      * @throws OutOfMemoryError if {@code minCapacity < 0}.  This is
      * interpreted as a request for the unsatisfiably large capacity
      * {@code (long) Integer.MAX_VALUE + (minCapacity - Integer.MAX_VALUE)}.
+     * 确定容量，是否增长
      */
     private void ensureCapacity(int minCapacity) {
         // overflow-conscious code
@@ -106,11 +111,12 @@ public class ByteArrayOutputStream extends OutputStream {
      * number of elements specified by the minimum capacity argument.
      *
      * @param minCapacity the desired minimum capacity
+     * 增长容量
      */
     private void grow(int minCapacity) {
         // overflow-conscious code
         int oldCapacity = buf.length;
-        int newCapacity = oldCapacity << 1;
+        int newCapacity = oldCapacity << 1; //容量翻番
         if (newCapacity - minCapacity < 0)
             newCapacity = minCapacity;
         if (newCapacity - MAX_ARRAY_SIZE > 0)
@@ -132,7 +138,7 @@ public class ByteArrayOutputStream extends OutputStream {
      * @param   b   the byte to be written.
      */
     public synchronized void write(int b) {
-        ensureCapacity(count + 1);
+        ensureCapacity(count + 1);//检测容量
         buf[count] = (byte) b;
         count += 1;
     }
@@ -151,7 +157,7 @@ public class ByteArrayOutputStream extends OutputStream {
             throw new IndexOutOfBoundsException();
         }
         ensureCapacity(count + len);
-        System.arraycopy(b, off, buf, count, len);
+        System.arraycopy(b, off, buf, count, len);//copy数组
         count += len;
     }
 
@@ -162,9 +168,10 @@ public class ByteArrayOutputStream extends OutputStream {
      *
      * @param      out   the output stream to which to write the data.
      * @exception  IOException  if an I/O error occurs.
+     * 调用特定outPutStream的write()方法
      */
     public synchronized void writeTo(OutputStream out) throws IOException {
-        out.write(buf, 0, count);
+        out.write(buf, 0, count);//写出数据
     }
 
     /**
@@ -174,6 +181,7 @@ public class ByteArrayOutputStream extends OutputStream {
      * reusing the already allocated buffer space.
      *
      * @see     java.io.ByteArrayInputStream#count
+     *  重置“字节数组输出流”的计数。
      */
     public synchronized void reset() {
         count = 0;

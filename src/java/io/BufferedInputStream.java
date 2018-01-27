@@ -86,6 +86,7 @@ class BufferedInputStream extends FilterInputStream {
      * elements <code>buf[0]</code>  through <code>buf[count-1]
      * </code>contain buffered input data obtained
      * from the underlying  input stream.
+     * 缓冲区有效字节数
      */
     protected int count;
 
@@ -103,6 +104,7 @@ class BufferedInputStream extends FilterInputStream {
      * read from the contained  input stream.
      *
      * @see     java.io.BufferedInputStream#buf
+     * 缓冲区的位置索引
      */
     protected int pos;
 
@@ -132,6 +134,7 @@ class BufferedInputStream extends FilterInputStream {
      *
      * @see     java.io.BufferedInputStream#mark(int)
      * @see     java.io.BufferedInputStream#pos
+     * 
      */
     protected int markpos = -1;
 
@@ -212,20 +215,20 @@ class BufferedInputStream extends FilterInputStream {
      */
     private void fill() throws IOException {
         byte[] buffer = getBufIfOpen();
-        if (markpos < 0)
+        if (markpos < 0)                           //1情况1：读取完buffer中的数据，并且buffer没有被标记
             pos = 0;            /* no mark: throw away the buffer */
-        else if (pos >= buffer.length)  /* no room left in buffer */
-            if (markpos > 0) {  /* can throw away early part of the buffer */
-                int sz = pos - markpos;
-                System.arraycopy(buffer, markpos, buffer, 0, sz);
-                pos = sz;
+        else if (pos >= buffer.length)  /* no room left in buffer 缓冲区没有空间*///情况2：读取完buffer中的数据，buffer的标记位置>0，并且buffer中没有多余的空间
+            if (markpos > 0) {  /* can throw away early part of the buffer 可以丢弃缓冲区标记markpos前面的一部分 */
+                int sz = pos - markpos;//缓冲区的数据长度
+                System.arraycopy(buffer, markpos, buffer, 0, sz);//copy
+                pos = sz;//缓冲区下标改变，缓冲区内容变为从0->sz
                 markpos = 0;
-            } else if (buffer.length >= marklimit) {
-                markpos = -1;   /* buffer got too big, invalidate mark */
-                pos = 0;        /* drop buffer contents */
+            } else if (buffer.length >= marklimit) {//情况3：读取完buffer中的数据，buffer被标记位置=0，buffer中没有多余的空间，并且buffer.length>=marklimit
+                markpos = -1;   /* buffer got too big, invalidate mark,缓冲区太大了，取消标记位*/
+                pos = 0;        /* drop buffer contents ，删掉缓冲区内容*/
             } else if (buffer.length >= MAX_BUFFER_SIZE) {
                 throw new OutOfMemoryError("Required array size too large");
-            } else {            /* grow buffer */
+            } else {            /* grow buffer 情况4：读取完buffer中的数据，buffer被标记位置=0，buffer中没有多余的空间，并且buffer.length<marklimit */
                 int nsz = (pos <= MAX_BUFFER_SIZE - pos) ?
                         pos * 2 : MAX_BUFFER_SIZE;
                 if (nsz > marklimit)
@@ -243,7 +246,7 @@ class BufferedInputStream extends FilterInputStream {
                 buffer = nbuf;
             }
         count = pos;
-        int n = getInIfOpen().read(buffer, pos, buffer.length - pos);
+        int n = getInIfOpen().read(buffer, pos, buffer.length - pos);//装饰的input读入数据到buffer
         if (n > 0)
             count = n + pos;
     }
@@ -261,12 +264,12 @@ class BufferedInputStream extends FilterInputStream {
      * @see        java.io.FilterInputStream#in
      */
     public synchronized int read() throws IOException {
-        if (pos >= count) {
-            fill();
+        if (pos >= count) {//缓冲区数据读完了
+            fill();//获取更多的数据，填充到缓冲区
             if (pos >= count)
                 return -1;
         }
-        return getBufIfOpen()[pos++] & 0xff;
+        return getBufIfOpen()[pos++] & 0xff;//返回字节
     }
 
     /**
@@ -274,22 +277,22 @@ class BufferedInputStream extends FilterInputStream {
      * stream at most once if necessary.
      */
     private int read1(byte[] b, int off, int len) throws IOException {
-        int avail = count - pos;
+        int avail = count - pos;//缓冲区还有多少数据可用
         if (avail <= 0) {
             /* If the requested length is at least as large as the buffer, and
                if there is no mark/reset activity, do not bother to copy the
                bytes into the local buffer.  In this way buffered streams will
                cascade harmlessly. */
-            if (len >= getBufIfOpen().length && markpos < 0) {
-                return getInIfOpen().read(b, off, len);
+            if (len >= getBufIfOpen().length && markpos < 0) {//要读取的长度大于缓冲区大小，并且没有标记。可以先直接读入数据到b，在缓冲。
+                return getInIfOpen().read(b, off, len);//返回读入的数据量
             }
-            fill();
+            fill();//填充数据到缓冲区
             avail = count - pos;
             if (avail <= 0) return -1;
         }
-        int cnt = (avail < len) ? avail : len;
+        int cnt = (avail < len) ? avail : len;//本次读取的长度
         System.arraycopy(getBufIfOpen(), pos, b, off, cnt);
-        pos += cnt;
+        pos += cnt;//标记增加
         return cnt;
     }
 
@@ -345,8 +348,8 @@ class BufferedInputStream extends FilterInputStream {
             int nread = read1(b, off + n, len - n);
             if (nread <= 0)
                 return (n == 0) ? nread : n;
-            n += nread;
-            if (n >= len)
+            n += nread;//读入的数据多少
+            if (n >= len)//读入len的长度了
                 return n;
             // if not closed but no bytes available, return
             InputStream input = in;
@@ -363,6 +366,7 @@ class BufferedInputStream extends FilterInputStream {
      *                          or if this input stream has been closed by
      *                          invoking its {@link #close()} method, or an
      *                          I/O error occurs.
+     * 跳过多少
      */
     public synchronized long skip(long n) throws IOException {
         getBufIfOpen(); // Check for closed stream
@@ -373,7 +377,7 @@ class BufferedInputStream extends FilterInputStream {
 
         if (avail <= 0) {
             // If no mark position set then don't keep in buffer
-            if (markpos <0)
+            if (markpos <0)//没有可读数据，并且没有设置标记
                 return getInIfOpen().skip(n);
 
             // Fill in buffer to save bytes for reset
@@ -384,7 +388,7 @@ class BufferedInputStream extends FilterInputStream {
         }
 
         long skipped = (avail < n) ? avail : n;
-        pos += skipped;
+        pos += skipped;//标记移动
         return skipped;
     }
 

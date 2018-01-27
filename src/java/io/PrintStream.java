@@ -58,13 +58,18 @@ public class PrintStream extends FilterOutputStream
     implements Appendable, Closeable
 {
 
-    private final boolean autoFlush;
-    private boolean trouble = false;
+    private final boolean autoFlush;//是否自动flush
+    private boolean trouble = false;//记录是否抛出异常
     private Formatter formatter;
 
     /**
      * Track both the text- and character-output streams, so that their buffers
      * can be flushed without flushing the entire stream.
+     * //PrintStream本身是字节流，利用但是BufferedWriter，支持字符流。
+     * charOut协助创建textOut,并且 charOut具有特定编码的处理，使得PrintStream也具有这个功能
+     * 可以查看构造方法理解
+     *  this.charOut = new OutputStreamWriter(this, charset);  //charset,特定编码
+        this.textOut = new BufferedWriter(charOut);
      */
     private BufferedWriter textOut;
     private OutputStreamWriter charOut;
@@ -108,7 +113,7 @@ public class PrintStream extends FilterOutputStream
     private PrintStream(boolean autoFlush, OutputStream out, Charset charset) {
         super(out);
         this.autoFlush = autoFlush;
-        this.charOut = new OutputStreamWriter(this, charset);
+        this.charOut = new OutputStreamWriter(this, charset);   
         this.textOut = new BufferedWriter(charOut);
     }
 
@@ -334,7 +339,7 @@ public class PrintStream extends FilterOutputStream
     public void flush() {
         synchronized (this) {
             try {
-                ensureOpen();
+                ensureOpen();//确保开启out不为null
                 out.flush();
             }
             catch (IOException x) {
@@ -478,7 +483,7 @@ public class PrintStream extends FilterOutputStream
             synchronized (this) {
                 ensureOpen();
                 out.write(buf, off, len);
-                if (autoFlush)
+                if (autoFlush)//是否自动flush
                     out.flush();
             }
         }
@@ -501,7 +506,7 @@ public class PrintStream extends FilterOutputStream
             synchronized (this) {
                 ensureOpen();
                 textOut.write(buf);
-                textOut.flushBuffer();
+                textOut.flushBuffer();//这里两个对象都调用该方法，一个write
                 charOut.flushBuffer();
                 if (autoFlush) {
                     for (int i = 0; i < buf.length; i++)
@@ -536,12 +541,12 @@ public class PrintStream extends FilterOutputStream
             trouble = true;
         }
     }
-
+    //回车，新的一行
     private void newLine() {
         try {
             synchronized (this) {
                 ensureOpen();
-                textOut.newLine();
+                textOut.newLine();//新的一行
                 textOut.flushBuffer();
                 charOut.flushBuffer();
                 if (autoFlush)

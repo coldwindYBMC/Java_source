@@ -33,12 +33,14 @@ package java.io;
  * @author  unascribed
  * @see     java.io.DataInputStream
  * @since   JDK1.0
+ * 默认存入unicode字节。写入和读区顺序不能变
  */
 public
 class DataOutputStream extends FilterOutputStream implements DataOutput {
     /**
      * The number of bytes written to the data output stream so far.
      * If this counter overflows, it will be wrapped to Integer.MAX_VALUE.
+     * 写的数据长度
      */
     protected int written;
 
@@ -177,11 +179,12 @@ class DataOutputStream extends FilterOutputStream implements DataOutput {
      * @param      v   a <code>char</code> value to be written.
      * @exception  IOException  if an I/O error occurs.
      * @see        java.io.FilterOutputStream#out
+     * 例如 16 0000 0000 0001 0000 -> 
      */
     public final void writeChar(int v) throws IOException {
-        out.write((v >>> 8) & 0xFF);
-        out.write((v >>> 0) & 0xFF);
-        incCount(2);
+        out.write((v >>> 8) & 0xFF);// 0000 0000
+        out.write((v >>> 0) & 0xFF);//0001 0000
+        incCount(2); //存入了两次，在文本中，记录为0010(16) 十六进制
     }
 
     /**

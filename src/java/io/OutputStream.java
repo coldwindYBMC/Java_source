@@ -97,7 +97,7 @@ public abstract class OutputStream implements Closeable, Flushable {
      * <code>b</code>, then an <tt>IndexOutOfBoundsException</tt> is thrown.
      *
      * @param      b     the data.
-     * @param      off   the start offset in the data.
+     * @param      off   the start offset in the data.数据起始偏移量
      * @param      len   the number of bytes to write.
      * @exception  IOException  if an I/O error occurs. In particular,
      *             an <code>IOException</code> is thrown if the output
